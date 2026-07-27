@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>ESP UPS Guardian</title>
+
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="card">
+
+        <h1 class="title">
+            ESP UPS Guardian
+        </h1>
+
+        <div id="power" class="state">
+            UNKNOWN
+        </div>
+
+        <div id="status" class="status">
+            No Countdown
+        </div>
+
+        <div id="countdown" class="countdown">
+
+        </div>
+
+        <div class="footer">
+            Version 0.1.0
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+async function updateStatus() {
+
+    try {
+
+        const response = await fetch("/status");
+        const data = await response.json();
+
+        const power = document.getElementById("power");
+        const status = document.getElementById("status");
+        const countdown = document.getElementById("countdown");
+
+        power.innerHTML = "PLN " + data.power;
+
+        power.classList.remove("on");
+        power.classList.remove("off");
+
+        if (data.power === "ON") {
+
+            power.classList.add("on");
+
+        } else if (data.power === "OFF") {
+
+            power.classList.add("off");
+
+        }
+
+        if (data.running) {
+
+            status.innerHTML = "Shutdown Countdown";
+
+            countdown.innerHTML = data.countdown;
+
+        } else {
+
+            status.innerHTML = "No Countdown";
+
+            countdown.innerHTML = "";
+
+        }
+
+    } catch (err) {
+
+        console.log(err);
+
+    }
+
+}
+
+updateStatus();
+
+setInterval(updateStatus,1000);
+
+</script>
+
+</body>
+
+</html>
