@@ -23,4 +23,9 @@ HEARTBEAT_TIMEOUT = config.getint(
     "timeout"
 )
 
+ESP_TIMEOUT = config.getint(
+    "ESP",
+    "esp_timeout"
+)
+
 TITLE = config["dashboard"]["title"]

@@ -1,14 +1,15 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 
-#define FW_VERSION "0.2.0"
-#define PLN_PIN D5
+#define FW_VERSION  "0.2.0"
 #define DEVICE_NAME "Frigate-01"
 
-const char* WIFI_SSID = "MikroTik-RB9412nd";
-const char* WIFI_PASS = "04122025";
+#define PLN_PIN D5
 
-const char* SERVER_IP = "10.77.227.100";
+const char* WIFI_SSID = "xxxxxxxx";
+const char* WIFI_PASS = "xxxxxxxx";
+
+const char* SERVER_IP = "xx.xx.xx.xx";
 const int SERVER_PORT = 8080;
 
 WiFiClient client;
@@ -20,141 +21,60 @@ unsigned long lastHeartbeat = 0;
 bool ledState = false;
 bool lastState = HIGH;
 
-// ======================================================
+//
 // CONNECT WIFI
-// ======================================================
+//
 
 void connectWifi() {
 
-  if (WiFi.status() == WL_CONNECTED)
-    return;
+    if (WiFi.status() == WL_CONNECTED)
+        return;
 
-  Serial.println();
-  Serial.println("================================");
-  Serial.println("Connecting WiFi...");
-  Serial.println("================================");
+    Serial.println();
+    Serial.println("================================");
+    Serial.println("Connecting WiFi...");
+    Serial.println("================================");
 
-  WiFi.mode(WIFI_STA);
-  WiFi.hostname("ESP-UPS-Guardian");
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
+    WiFi.mode(WIFI_STA);
+    WiFi.hostname("ESP-UPS-Guardian");
+    WiFi.begin(WIFI_SSID, WIFI_PASS);
 
-  unsigned long start = millis();
+    unsigned long start = millis();
 
-  while (WiFi.status() != WL_CONNECTED) {
+    while (WiFi.status() != WL_CONNECTED) {
 
-    Serial.print(".");
+        Serial.print(".");
 
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(100);
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(400);
+        digitalWrite(LED_BUILTIN, LOW);
+        delay(100);
+        digitalWrite(LED_BUILTIN, HIGH);
+        delay(400);
 
-    if (millis() - start > 30000) {
+        if (millis() - start > 30000) {
 
-      Serial.println();
-      Serial.println("WiFi Timeout!");
+            Serial.println();
+            Serial.println("WiFi Timeout!");
 
-      return;
+            return;
+
+        }
 
     }
-  }
 
-  Serial.println();
-  Serial.println("================================");
-  Serial.println("WiFi Connected!");
-  Serial.print("IP Address : ");
-  Serial.println(WiFi.localIP());
-  Serial.println("================================");
+    Serial.println();
+    Serial.println("================================");
+    Serial.println("WiFi Connected!");
+    Serial.print("IP Address : ");
+    Serial.println(WiFi.localIP());
+    Serial.println("================================");
+
 }
 
-// ======================================================
-// SEND STATE TO SERVER
-// ======================================================
+//
+// SEND PLN STATE
+//
 
 void sendState(bool state) {
-
-  if (WiFi.status() != WL_CONNECTED) {
-
-    Serial.println("WiFi disconnected!");
-    return;
-
-  }
-
-  String url =
-      "http://" +
-      String(SERVER_IP) +
-      ":" +
-      String(SERVER_PORT) +
-      "/pln?state=" +
-      (state == LOW ? "ON" : "OFF");
-
-  Serial.println();
-  Serial.print("Sending : ");
-  Serial.println(url);
-
-  http.setTimeout(3000);
-
-  http.begin(client, url);
-
-  int code = http.GET();
-
-  if (code > 0) {
-
-    Serial.print("HTTP Code : ");
-    Serial.println(code);
-
-    String payload = http.getString();
-
-    Serial.print("Response  : ");
-    Serial.println(payload);
-
-  } else {
-
-    Serial.print("HTTP Error : ");
-    Serial.println(http.errorToString(code));
-
-  }
-
-  http.end();
-
-}
-
-// ======================================================
-// SETUP
-// ======================================================
-
-void setup() {
-
-  Serial.begin(115200);
-
-  pinMode(PLN_PIN, INPUT_PULLUP);
-  pinMode(LED_BUILTIN, OUTPUT);
-
-  digitalWrite(LED_BUILTIN, HIGH);
-
-  Serial.println();
-  Serial.println("================================");
-  Serial.println(" ESP UPS Guardian");
-  Serial.print(" Firmware : ");
-  Serial.println(FW_VERSION);
-  Serial.println("================================");
-
-  connectWifi();
-
-  lastState = digitalRead(PLN_PIN);
-
-  Serial.print("Initial State : ");
-
-  if (lastState == LOW)
-    Serial.println("PLN ON");
-  else
-    Serial.println("PLN OFF");
-
-  sendState(lastState);
-
-}
-
-void sendHeartbeat() {
 
     if (WiFi.status() != WL_CONNECTED)
         return;
@@ -164,70 +84,188 @@ void sendHeartbeat() {
         String(SERVER_IP) +
         ":" +
         String(SERVER_PORT) +
-        "/heartbeat";
+        "/pln?state=" +
+        String(state == LOW ? "ON" : "OFF");
 
-  http.setTimeout(3000);
+    Serial.println();
+    Serial.print("Sending State : ");
+    Serial.println(url);
 
-  http.begin(client, url);
+    http.setTimeout(3000);
 
-  int code = http.GET();
+    http.begin(client, url);
 
-  if(code <= 0){
+    int code = http.GET();
 
-    Serial.print("Heartbeat Error : ");
-    Serial.println(http.errorToString(code));
+    if (code > 0) {
 
-  }
+        Serial.print("HTTP Code : ");
+        Serial.println(code);
 
-  http.end();
+    } else {
+
+        Serial.print("HTTP Error : ");
+        Serial.println(http.errorToString(code));
+
+    }
+
+    http.end();
 
 }
 
-// ======================================================
-// LOOP
-// ======================================================
+//
+// HEARTBEAT
+//
 
-void loop() {
+void sendHeartbeat(bool state) {
 
-  // Auto reconnect WiFi
-  if (WiFi.status() != WL_CONNECTED) {
+    if (WiFi.status() != WL_CONNECTED)
+        return;
+
+    String url =
+        "http://" +
+        String(SERVER_IP) +
+        ":" +
+        String(SERVER_PORT) +
+        "/heartbeat"
+        "?power=" +
+        String(state == LOW ? "ON" : "OFF") +
+        "&device=" +
+        String(DEVICE_NAME) +
+        "&fw=" +
+        String(FW_VERSION);
+
+    http.setTimeout(3000);
+
+    http.begin(client, url);
+
+    int code = http.GET();
+
+    if (code > 0) {
+
+        Serial.print("Heartbeat HTTP : ");
+        Serial.println(code);
+
+    } else {
+
+        Serial.print("Heartbeat Error : ");
+        Serial.println(http.errorToString(code));
+
+    }
+
+    http.end();
+
+}
+
+//
+// SETUP
+//
+
+void setup() {
+
+    Serial.begin(115200);
+
+    pinMode(PLN_PIN, INPUT_PULLUP);
+    pinMode(LED_BUILTIN, OUTPUT);
+
+    digitalWrite(LED_BUILTIN, HIGH);
+
+    Serial.println();
+    Serial.println("================================");
+    Serial.println(" ESP UPS Guardian");
+    Serial.print(" Firmware : ");
+    Serial.println(FW_VERSION);
+    Serial.println("================================");
 
     connectWifi();
 
-  }
+    lastState = digitalRead(PLN_PIN);
 
-  // Heartbeat LED
-  // LED Heartbeat
-  if (millis() - lastBlink >= 1000) {
+    Serial.print("Initial State : ");
 
-     lastBlink = millis();
-
-     ledState = !ledState;
-
-     digitalWrite(LED_BUILTIN, ledState ? LOW : HIGH);
-
-  }
-
-  bool state = digitalRead(PLN_PIN);
-
-  if (state != lastState) {
-
-    lastState = state;
-
-    Serial.println();
-    Serial.println("==============================");
-
-    if (state == LOW)
-      Serial.println("PLN ON");
+    if (lastState == LOW)
+        Serial.println("PLN ON");
     else
-      Serial.println("PLN OFF");
+        Serial.println("PLN OFF");
 
-    sendState(state);
+    // Sync pertama
+    sendState(lastState);
+    sendHeartbeat(lastState);
 
-    Serial.println("==============================");
+}
 
-  }
+//
+// LOOP
+//
 
-  delay(50);
+void loop() {
+
+    //
+    // Auto reconnect
+    //
+
+    if (WiFi.status() != WL_CONNECTED) {
+
+        connectWifi();
+
+    }
+
+    //
+    // Heartbeat server
+    //
+
+    if (millis() - lastHeartbeat >= 5000) {
+
+        lastHeartbeat = millis();
+
+        sendHeartbeat(lastState);
+
+    }
+
+    //
+    // LED heartbeat
+    //
+
+    if (millis() - lastBlink >= 1000) {
+
+        lastBlink = millis();
+
+        ledState = !ledState;
+
+        digitalWrite(
+            LED_BUILTIN,
+            ledState ? LOW : HIGH
+        );
+
+    }
+
+    //
+    // Detect PLN
+    //
+
+    bool state = digitalRead(PLN_PIN);
+
+    if (state != lastState) {
+
+        lastState = state;
+
+        Serial.println();
+        Serial.println("==============================");
+
+        if (state == LOW)
+            Serial.println("PLN ON");
+        else
+            Serial.println("PLN OFF");
+
+        sendState(state);
+
+        // Sinkronkan heartbeat juga
+        sendHeartbeat(state);
+
+        Serial.println("==============================");
+
+    }
+
+    delay(50);
 
 }

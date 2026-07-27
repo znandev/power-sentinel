@@ -1,21 +1,15 @@
 from flask import Flask, request, jsonify, render_template
 from datetime import datetime
+from config import *
 import threading
 import subprocess
 import time
 
 app = Flask(__name__)
 
-# ===========================================
-# CONFIG
-# ===========================================
-
-COUNTDOWN_SECONDS = 15      # nanti ganti 60
-TEST_MODE = True            # nanti False
-
-# ===========================================
+# ======================================================
 # GLOBAL
-# ===========================================
+# ======================================================
 
 power_state = "UNKNOWN"
 
@@ -24,14 +18,16 @@ countdown_running = False
 
 shutdown_thread = None
 
-LOCK = threading.Lock()
-
 last_seen = time.time()
 
-ESP_TIMEOUT = 15
-# ===========================================
+device_name = "UNKNOWN"
+firmware = "UNKNOWN"
+
+LOCK = threading.Lock()
+
+# ======================================================
 # LOGGER
-# ===========================================
+# ======================================================
 
 def log(message):
 
@@ -40,9 +36,9 @@ def log(message):
         flush=True
     )
 
-# ===========================================
+# ======================================================
 # SHUTDOWN
-# ===========================================
+# ======================================================
 
 def execute_shutdown():
 
@@ -61,6 +57,8 @@ def execute_shutdown():
         log("Created /tmp/ups_guardian_shutdown_test")
 
     else:
+
+        log("Executing system shutdown...")
 
         subprocess.run([
             "sudo",
@@ -84,7 +82,6 @@ def shutdown_timer():
             if not countdown_running:
 
                 log("Countdown cancelled")
-
                 return
 
             countdown -= 1
@@ -102,19 +99,15 @@ def shutdown_timer():
 
                 return
 
-# ===========================================
-# WEB
-# ===========================================
+# ======================================================
+# ROUTES
+# ======================================================
 
 @app.route("/")
 def home():
 
-    return render_template(
-        "index.html",
-        state=power_state,
-        countdown=countdown,
-        running=countdown_running
-    )
+    return render_template("index.html")
+
 
 @app.route("/pln")
 def pln():
@@ -127,7 +120,6 @@ def pln():
     state = request.args.get("state", "UNKNOWN").upper()
 
     if state not in ("ON", "OFF"):
-
         return "Invalid", 400
 
     with LOCK:
@@ -140,7 +132,7 @@ def pln():
 
                 log("Power Lost")
 
-                countdown = COUNTDOWN_SECONDS
+                countdown = COUNTDOWN
                 countdown_running = True
 
                 shutdown_thread = threading.Thread(
@@ -150,10 +142,9 @@ def pln():
 
                 shutdown_thread.start()
 
-        elif state == "ON":
+        else:
 
             if countdown_running:
-
                 log("Power Restored")
 
             countdown_running = False
@@ -161,36 +152,72 @@ def pln():
 
     return "OK"
 
-@app.route("/status")
-def status():
-
-    esp_online = (time.time() - last_seen) < ESP_TIMEOUT
-
-    return jsonify({
-
-        "power": power_state,
-        "countdown": countdown,
-        "running": countdown_running,
-        "esp_online": esp_online
-
-    })
 
 @app.route("/heartbeat")
 def heartbeat():
 
     global last_seen
+    global power_state
+    global device_name
+    global firmware
 
-    last_seen = time.time()
+    with LOCK:
 
-    return "OK"
-# ===========================================
-# START
-# ===========================================
+        last_seen = time.time()
 
-log("ESP UPS Guardian Started")
+        power_state = request.args.get(
+            "power",
+            power_state
+        ).upper()
+
+        device_name = request.args.get(
+            "device",
+            device_name
+        )
+
+        firmware = request.args.get(
+            "fw",
+            firmware
+        )
+
+    return jsonify({
+
+        "status": "ok"
+
+    })
+
+
+@app.route("/status")
+def status():
+
+    with LOCK:
+
+        esp_online = (
+            time.time() - last_seen
+        ) < ESP_TIMEOUT
+
+        return jsonify({
+
+            "power": power_state,
+            "countdown": countdown,
+            "running": countdown_running,
+            "esp_online": esp_online,
+            "device": device_name,
+            "firmware": firmware
+
+        })
+
+# ======================================================
+# STARTUP
+# ======================================================
+
+log("=" * 40)
+log(f"{TITLE} Started")
+log(f"Listening on {HOST}:{PORT}")
+log("=" * 40)
 
 app.run(
-    host="0.0.0.0",
-    port=8080,
+    host=HOST,
+    port=PORT,
     threaded=True
 )
