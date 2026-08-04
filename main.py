@@ -1,6 +1,25 @@
 from flask import Flask, request, jsonify, render_template
 from datetime import datetime
+from database import (
+    init_db, 
+    insert_event,
+    get_events,
+    get_recent_events,
+    get_last_event,
+    get_statistics
+)
 from config import *
+from event import (
+    event_power_lost,
+    event_power_restored,
+    event_countdown_started,
+    event_countdown_cancelled,
+    event_shutdown,
+    event_heartbeat,
+    event_esp_online,
+    event_esp_offline
+)
+
 import threading
 import subprocess
 import time
@@ -22,6 +41,7 @@ last_seen = time.time()
 
 device_name = "UNKNOWN"
 firmware = "UNKNOWN"
+model = "UNKNOWN"
 
 LOCK = threading.Lock()
 
@@ -42,31 +62,67 @@ def log(message):
 
 def execute_shutdown():
 
-    if TEST_MODE:
+    log("=" * 50)
 
-        log("=" * 40)
-        log("TEST MODE")
-        log("EXECUTE SHUTDOWN")
-        log("=" * 40)
+    log("PowerSentinel Shutdown Sequence")
 
-        subprocess.run([
-            "touch",
-            "/tmp/ups_guardian_shutdown_test"
-        ])
+    log("=" * 50)
 
-        log("Created /tmp/ups_guardian_shutdown_test")
+    if not SHUTDOWN_ENABLED:
 
-    else:
+        log("Shutdown disabled by configuration.")
 
-        log("Executing system shutdown...")
+        return
 
-        subprocess.run([
+    if STOP_SERVICES:
+
+        log("Stopping configured services...")
+
+        for service in SERVICES:
+
+            try:
+
+                log(f"Stopping {service}")
+
+                subprocess.run(
+
+                    [
+
+                        "systemctl",
+
+                        "stop",
+
+                        service
+
+                    ],
+
+                    timeout=SERVICE_TIMEOUT,
+
+                    check=False
+
+                )
+
+            except Exception as e:
+
+                log(f"{service} : {e}")
+
+    log("Executing system shutdown...")
+
+    subprocess.run(
+
+        [
+
             "sudo",
-            "shutdown",
-            "-h",
-            "now"
-        ])
 
+            "shutdown",
+
+            "-h",
+
+            "now"
+
+        ]
+
+    )
 
 def shutdown_timer():
 
@@ -81,7 +137,6 @@ def shutdown_timer():
 
             if not countdown_running:
 
-                log("Countdown cancelled")
                 return
 
             countdown -= 1
@@ -94,6 +149,8 @@ def shutdown_timer():
             if countdown == 0:
 
                 countdown_running = False
+
+                event_shutdown(device_name)
 
                 execute_shutdown()
 
@@ -116,24 +173,61 @@ def pln():
     global countdown
     global countdown_running
     global shutdown_thread
+    global device_name
+    global firmware
+    global model
 
     state = request.args.get("state", "UNKNOWN").upper()
 
     if state not in ("ON", "OFF"):
         return "Invalid", 400
+    
+    device = request.args.get(
+        "device",
+        device_name
+    )
+
+    fw = request.args.get(
+        "fw",
+        firmware
+    )
+
+    device_model = request.args.get(
+        "model",
+        model
+    )
 
     with LOCK:
 
-        power_state = state
+        device_name = device
+        firmware = fw
+        model = device_model
+
+        previous_state = power_state
+
+        # =====================================
+        # POWER LOST
+        # =====================================
 
         if state == "OFF":
 
-            if not countdown_running:
+            if previous_state != "OFF":
+
+                power_state = "OFF"
 
                 log("Power Lost")
 
+                event_power_lost(device_name)
+
+            if not countdown_running:
+
                 countdown = COUNTDOWN
+
                 countdown_running = True
+
+                log("Shutdown countdown started")
+
+                event_countdown_started(device_name)
 
                 shutdown_thread = threading.Thread(
                     target=shutdown_timer,
@@ -142,16 +236,31 @@ def pln():
 
                 shutdown_thread.start()
 
-        else:
+        # =====================================
+        # POWER RESTORED
+        # =====================================
 
-            if countdown_running:
+        elif state == "ON":
+
+            if previous_state != "ON":
+
+                power_state = "ON"
+
                 log("Power Restored")
 
-            countdown_running = False
-            countdown = 0
+                event_power_restored(device_name)
+
+            if countdown_running:
+
+                log("Countdown cancelled")
+
+                event_countdown_cancelled(device_name)
+
+                countdown_running = False
+
+                countdown = 0
 
     return "OK"
-
 
 @app.route("/heartbeat")
 def heartbeat():
@@ -160,6 +269,7 @@ def heartbeat():
     global power_state
     global device_name
     global firmware
+    global model
 
     with LOCK:
 
@@ -180,12 +290,16 @@ def heartbeat():
             firmware
         )
 
+        model = request.args.get(
+            "model",
+            model
+        )
+
     return jsonify({
 
         "status": "ok"
 
     })
-
 
 @app.route("/status")
 def status():
@@ -203,16 +317,40 @@ def status():
             "running": countdown_running,
             "esp_online": esp_online,
             "device": device_name,
-            "firmware": firmware
+            "firmware": firmware,
+            "model": model
 
         })
+
+@app.route("/events")
+def events():
+
+    return jsonify(
+        get_recent_events()
+
+    )
+
+@app.route("/statistics")
+def statistics():
+
+    return jsonify(
+        get_statistics()
+    )
 
 # ======================================================
 # STARTUP
 # ======================================================
 
+init_db()
+
 log("=" * 40)
 log(f"{TITLE} Started")
+log("Shutdown Configuration")
+log("=" * 40)
+log(f"Enabled        : {SHUTDOWN_ENABLED}")
+log(f"Countdown      : {COUNTDOWN}")
+log(f"Stop Services  : {STOP_SERVICES}")
+log(f"Services       : {SERVICES}")
 log(f"Listening on {HOST}:{PORT}")
 log("=" * 40)
 

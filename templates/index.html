@@ -3,14 +3,25 @@
 
 <head>
 
-<meta charset="UTF-8">
+    <meta charset="UTF-8">
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
 
-<title>ESP UPS Guardian</title>
+    <title>PowerSentinel</title>
 
-<link rel="stylesheet"
-      href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+    <link rel="preconnect"
+          href="https://fonts.googleapis.com">
+
+    <link rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+          rel="stylesheet">
 
 </head>
 
@@ -20,85 +31,234 @@
 
     <div class="card">
 
-        <h1 class="title">
-            ESP UPS Guardian
-        </h1>
+        <!-- ====================================== -->
+        <!-- HEADER -->
+        <!-- ====================================== -->
 
-        <div id="power" class="state">
-            UNKNOWN
+        <div class="header">
+
+            <h1>⚡ PowerSentinel</h1>
+
+            <p class="subtitle">
+
+                Smart Power Monitoring System
+
+            </p>
+
         </div>
 
-        <div id="status" class="status">
-            No Countdown
+        <!-- ====================================== -->
+        <!-- TOP GRID -->
+        <!-- ====================================== -->
+
+        <div class="top-grid">
+
+            <!-- POWER -->
+
+            <div class="power-card">
+
+                <div class="section-title">
+
+                    Power Status
+
+                </div>
+
+                <div
+                    id="power"
+                    class="state">
+
+                    UNKNOWN
+
+                </div>
+
+                <div
+                    id="status"
+                    class="status">
+
+                    Waiting...
+
+                </div>
+
+                <div
+                    id="countdown"
+                    class="countdown">
+
+                    IDLE
+
+                </div>
+
+            </div>
+
+            <!-- DEVICE -->
+
+            <div class="device-card">
+
+                <div class="info">
+
+                    <div class="info-row">
+
+                        <span class="label">
+
+                            ESP Status
+
+                        </span>
+
+                        <span id="esp">
+
+                            ...
+
+                        </span>
+
+                    </div>
+
+                    <div class="info-row">
+
+                        <span class="label">
+
+                            Device
+
+                        </span>
+
+                        <span id="device">
+
+                            ...
+
+                        </span>
+
+                    </div>
+
+                    <div class="info-row">
+
+                        <span class="label">
+
+                            Model
+
+                        </span>
+
+                        <span id="model">
+
+                            ...
+
+                        </span>
+
+                    </div>
+
+                    <div class="info-row">
+
+                        <span class="label">
+
+                            Firmware
+
+                        </span>
+
+                        <span id="firmware">
+
+                            ...
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
         </div>
 
-        <div id="countdown" class="countdown">
+        <div class="divider"></div>
+
+        <!-- ====================================== -->
+        <!-- STATISTICS -->
+        <!-- ====================================== -->
+
+        <div class="section-title">
+
+            Statistics
 
         </div>
 
-        <div class="footer">
-            Version 0.1.0
+        <div class="statistics">
+
+            <div class="stat-card">
+
+                <h4>
+
+                    ⚡ Power Loss
+
+                </h4>
+
+                <span id="power-loss">
+
+                    0
+
+                </span>
+
+            </div>
+
+            <div class="stat-card">
+
+                <h4>
+
+                    🛑 Shutdown
+
+                </h4>
+
+                <span id="shutdown">
+
+                    0
+
+                </span>
+
+            </div>
+
+            <div class="stat-card">
+
+                <h4>
+
+                    📄 Events
+
+                </h4>
+
+                <span id="total-events">
+
+                    0
+
+                </span>
+
+            </div>
+
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- ====================================== -->
+        <!-- EVENTS -->
+        <!-- ====================================== -->
+
+        <div class="section-title">
+
+            Recent Events
+
+        </div>
+
+        <div class="events-box">
+
+            <div id="events">
+
+                Loading...
+
+            </div>
+
         </div>
 
     </div>
 
 </div>
 
-<script>
-
-async function updateStatus() {
-
-    try {
-
-        const response = await fetch("/status");
-        const data = await response.json();
-
-        const power = document.getElementById("power");
-        const status = document.getElementById("status");
-        const countdown = document.getElementById("countdown");
-
-        power.innerHTML = "PLN " + data.power;
-
-        power.classList.remove("on");
-        power.classList.remove("off");
-
-        if (data.power === "ON") {
-
-            power.classList.add("on");
-
-        } else if (data.power === "OFF") {
-
-            power.classList.add("off");
-
-        }
-
-        if (data.running) {
-
-            status.innerHTML = "Shutdown Countdown";
-
-            countdown.innerHTML = data.countdown;
-
-        } else {
-
-            status.innerHTML = "No Countdown";
-
-            countdown.innerHTML = "";
-
-        }
-
-    } catch (err) {
-
-        console.log(err);
-
-    }
-
-}
-
-updateStatus();
-
-setInterval(updateStatus,1000);
-
-</script>
+<script src="{{ url_for('static', filename='js/status.js') }}"></script>
+<script src="{{ url_for('static', filename='js/events.js') }}"></script>
+<script src="{{ url_for('static', filename='js/statistics.js') }}"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
 
 </body>
 
