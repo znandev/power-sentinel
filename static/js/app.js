@@ -66,7 +66,7 @@ async function refreshDashboard(){
 
     await refreshStatistics();
 
-}
+} 
 
 refreshDashboard();
 
