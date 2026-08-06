@@ -9,6 +9,7 @@ from database import (
     get_statistics
 )
 from config import *
+from notification import *
 from event import (
     event_power_lost,
     event_power_restored,
@@ -39,9 +40,12 @@ shutdown_thread = None
 
 last_seen = time.time()
 
+esp_ip = "UNKNOWN"
 device_name = "UNKNOWN"
 firmware = "UNKNOWN"
 model = "UNKNOWN"
+
+startup_sent = False
 
 LOCK = threading.Lock()
 
@@ -152,9 +156,28 @@ def shutdown_timer():
 
                 event_shutdown(device_name)
 
+                notify_shutdown(
+
+                    model,
+                    firmware,
+                    esp_ip
+
+                )
+
                 execute_shutdown()
 
                 return
+
+# ========================
+# NOTIFY HELPER
+# ========================
+def current_time():
+
+    return datetime.now().strftime(
+
+        "%Y-%m-%d %H:%M:%S"
+
+    )
 
 # ======================================================
 # ROUTES
@@ -176,6 +199,8 @@ def pln():
     global device_name
     global firmware
     global model
+
+    esp_ip = request.remote_addr
 
     state = request.args.get("state", "UNKNOWN").upper()
 
@@ -219,6 +244,16 @@ def pln():
 
                 event_power_lost(device_name)
 
+                notify_power_lost(
+
+                    model,
+                    firmware,
+                    esp_ip,
+                    power_state,
+                    countdown
+
+                )
+
             if not countdown_running:
 
                 countdown = COUNTDOWN
@@ -250,6 +285,14 @@ def pln():
 
                 event_power_restored(device_name)
 
+                notify_power_restored(
+
+                    model,
+                    firmware,
+                    esp_ip,
+                    power_state
+                )
+
             if countdown_running:
 
                 log("Countdown cancelled")
@@ -270,6 +313,8 @@ def heartbeat():
     global device_name
     global firmware
     global model
+    global esp_ip
+    global startup_sent
 
     with LOCK:
 
@@ -294,6 +339,21 @@ def heartbeat():
             "model",
             model
         )
+
+        esp_ip = request.remote_addr
+
+        if not startup_sent:
+
+            startup_sent = True
+
+            notify_startup(
+
+                model,
+                firmware,
+                esp_ip,
+                power_state
+
+            )
 
     return jsonify({
 
@@ -321,6 +381,58 @@ def status():
             "model": model
 
         })
+
+def esp_monitor():
+
+    global last_seen
+
+    offline = False
+
+    while True:
+
+        time.sleep(1)
+
+        elapsed = time.time()-last_seen
+
+        if elapsed > ESP_TIMEOUT:
+
+            if not offline:
+
+                offline=True
+
+                log("ESP Offline")
+
+                event_esp_offline(device_name)
+
+                notify_esp_offline(
+
+                    model,
+                    firmware,
+                    esp_ip
+
+                )
+
+        else:
+
+            if offline:
+
+                offline=False
+
+                with LOCK:
+
+                    elapsed=time.time()-last_seen
+
+                log("ESP Online")
+
+                event_esp_online(device_name)
+
+                notify_esp_online(
+
+                    model,
+                    firmware,
+                    esp_ip
+
+                )
 
 @app.route("/events")
 def events():
@@ -353,6 +465,25 @@ log(f"Stop Services  : {STOP_SERVICES}")
 log(f"Services       : {SERVICES}")
 log(f"Listening on {HOST}:{PORT}")
 log("=" * 40)
+
+notify_startup(
+
+    model,
+    firmware,
+    esp_ip,
+    power_state
+
+)
+
+monitor_thread = threading.Thread(
+
+    target=esp_monitor,
+
+    daemon=True
+
+)
+
+monitor_thread.start()
 
 app.run(
     host=HOST,

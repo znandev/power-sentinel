@@ -1,4 +1,5 @@
 import configparser
+import socket
 
 config = configparser.ConfigParser()
 
@@ -61,3 +62,49 @@ SERVICES = [
     if service.strip()
 
 ]
+
+NOTIFICATION_ENABLED = config.getboolean(
+    "notification",
+    "enabled",
+    fallback=False
+)
+
+TELEGRAM_ENABLED = config.getboolean(
+    "notification",
+    "telegram",
+    fallback=False
+)
+
+BOT_TOKEN = config.get(
+    "notification",
+    "bot_token",
+    fallback=""
+)
+
+CHAT_ID = config.get(
+    "notification",
+    "chat_id",
+    fallback=""
+)
+
+SERVER_HOSTNAME = socket.gethostname()
+
+def get_server_ip():
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    try:
+
+        s.connect(("8.8.8.8", 80))
+
+        return s.getsockname()[0]
+
+    except Exception:
+
+        return "UNKNOWN"
+
+    finally:
+
+        s.close()
+
+SERVER_IP = get_server_ip()
