@@ -218,11 +218,11 @@ def pln():
 
     with LOCK:
 
-        device_name = device
-        firmware = fw
-        model = device_model
+        state.device_name = device
+        state.firmware = fw
+        state.model = device_model
 
-        previous_state = power_state
+        previous_state = state.power_state
 
         # =====================================
         # POWER LOST
@@ -232,7 +232,7 @@ def pln():
 
             if previous_state != "OFF":
 
-                power_state = "OFF"
+                state.power_state = "OFF"
 
                 log("Power Lost")
 
@@ -258,7 +258,9 @@ def pln():
 
                 log("Shutdown countdown started")
 
-                event_countdown_started(device_name)
+                event_countdown_started(
+                    state.device_name
+                )
 
                 shutdown_thread = threading.Thread(
                     target=shutdown_timer,
@@ -275,7 +277,7 @@ def pln():
 
             if previous_state != "ON":
 
-                power_state = "ON"
+                state.power_state = "ON"
 
                 log("Power Restored")
 
@@ -295,7 +297,9 @@ def pln():
 
                 log("Countdown cancelled")
 
-                event_countdown_cancelled(device_name)
+                event_countdown_cancelled(
+                    state.device_name
+                )
 
                 countdown_running = False
 
@@ -309,13 +313,6 @@ def heartbeat():
     global startup_sent
 
     state.esp_seen_once = True
-
-    import sys
-
-    print(
-        "[HEARTBEAT MODULE]",
-        id(sys.modules[__name__])
-    )
 
     with LOCK:
 
