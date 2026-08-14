@@ -10,6 +10,7 @@ from database import (
 )
 from config import *
 from notification import *
+from telegram_bot import telegram_bot
 from event import (
     event_power_lost,
     event_power_restored,
@@ -24,6 +25,7 @@ from event import (
 import threading
 import subprocess
 import time
+import state
 
 app = Flask(__name__)
 
@@ -31,20 +33,7 @@ app = Flask(__name__)
 # GLOBAL
 # ======================================================
 
-power_state = "UNKNOWN"
-
-countdown = 0
-countdown_running = False
-
 shutdown_thread = None
-
-last_seen = time.time()
-
-esp_ip = "UNKNOWN"
-device_name = "UNKNOWN"
-firmware = "UNKNOWN"
-model = "UNKNOWN"
-
 startup_sent = False
 
 LOCK = threading.Lock()
@@ -154,13 +143,15 @@ def shutdown_timer():
 
                 countdown_running = False
 
-                event_shutdown(device_name)
+                event_shutdown(
+                    state.device_name
+                )
 
                 notify_shutdown(
 
-                    model,
-                    firmware,
-                    esp_ip
+                    state.model,
+                    state.firmware,
+                    state.esp_ip
 
                 )
 
@@ -202,9 +193,12 @@ def pln():
 
     esp_ip = request.remote_addr
 
-    state = request.args.get("state", "UNKNOWN").upper()
+    pln_state = request.args.get(
+        "state",
+        "UNKNOWN"
+    ).upper()
 
-    if state not in ("ON", "OFF"):
+    if pln_state not in ("ON", "OFF"):
         return "Invalid", 400
     
     device = request.args.get(
@@ -234,7 +228,7 @@ def pln():
         # POWER LOST
         # =====================================
 
-        if state == "OFF":
+        if pln_state == "OFF":
 
             if previous_state != "OFF":
 
@@ -242,14 +236,16 @@ def pln():
 
                 log("Power Lost")
 
-                event_power_lost(device_name)
+                event_power_lost(
+                    state.device_name
+                )
 
                 notify_power_lost(
 
-                    model,
-                    firmware,
-                    esp_ip,
-                    power_state,
+                    state.model,
+                    state.firmware,
+                    state.esp_ip,
+                    state.power_state,
                     countdown
 
                 )
@@ -275,7 +271,7 @@ def pln():
         # POWER RESTORED
         # =====================================
 
-        elif state == "ON":
+        elif pln_state == "ON":
 
             if previous_state != "ON":
 
@@ -283,14 +279,16 @@ def pln():
 
                 log("Power Restored")
 
-                event_power_restored(device_name)
+                event_power_restored(
+                    state.device_name
+                )
 
                 notify_power_restored(
 
-                    model,
-                    firmware,
-                    esp_ip,
-                    power_state
+                    state.model,
+                    state.firmware,
+                    state.esp_ip,
+                    state.power_state
                 )
 
             if countdown_running:
@@ -308,39 +306,43 @@ def pln():
 @app.route("/heartbeat")
 def heartbeat():
 
-    global last_seen
-    global power_state
-    global device_name
-    global firmware
-    global model
-    global esp_ip
     global startup_sent
+
+    state.esp_seen_once = True
+
+    import sys
+
+    print(
+        "[HEARTBEAT MODULE]",
+        id(sys.modules[__name__])
+    )
 
     with LOCK:
 
-        last_seen = time.time()
+        state.last_seen = time.time()
+        state.esp_seen_once = True
 
-        power_state = request.args.get(
+        state.power_state = request.args.get(
             "power",
-            power_state
+            state.power_state
         ).upper()
 
-        device_name = request.args.get(
+        state.device_name = request.args.get(
             "device",
-            device_name
+            state.device_name
         )
 
-        firmware = request.args.get(
+        state.firmware = request.args.get(
             "fw",
-            firmware
+            state.firmware
         )
 
-        model = request.args.get(
+        state.model = request.args.get(
             "model",
-            model
+            state.model
         )
 
-        esp_ip = request.remote_addr
+        state.esp_ip = request.remote_addr
 
         if not startup_sent:
 
@@ -348,10 +350,10 @@ def heartbeat():
 
             notify_startup(
 
-                model,
-                firmware,
-                esp_ip,
-                power_state
+                state.model,
+                state.firmware,
+                state.esp_ip,
+                state.power_state
 
             )
 
@@ -367,24 +369,22 @@ def status():
     with LOCK:
 
         esp_online = (
-            time.time() - last_seen
+            time.time() - state.last_seen
         ) < ESP_TIMEOUT
 
         return jsonify({
 
-            "power": power_state,
+            "power": state.power_state,
             "countdown": countdown,
             "running": countdown_running,
             "esp_online": esp_online,
-            "device": device_name,
-            "firmware": firmware,
-            "model": model
+            "device": state.device_name,
+            "firmware": state.firmware,
+            "model": state.model
 
         })
 
 def esp_monitor():
-
-    global last_seen
 
     offline = False
 
@@ -392,7 +392,14 @@ def esp_monitor():
 
         time.sleep(1)
 
-        elapsed = time.time()-last_seen
+        if not state.esp_seen_once:
+            continue
+
+        elapsed = time.time()-state.last_seen
+
+        print(
+            f"[ESP_MON] elapsed={elapsed:.1f}"
+        )
 
         if elapsed > ESP_TIMEOUT:
 
@@ -402,15 +409,19 @@ def esp_monitor():
 
                 log("ESP Offline")
 
-                event_esp_offline(device_name)
+                event_esp_offline(
+                    state.device_name
+                )
 
                 notify_esp_offline(
 
-                    model,
-                    firmware,
-                    esp_ip
+                    state.model,
+                    state.firmware,
+                    state.esp_ip
 
                 )
+
+                print("[ESP] OFFLINE TRIGGERED")
 
         else:
 
@@ -420,19 +431,28 @@ def esp_monitor():
 
                 with LOCK:
 
-                    elapsed=time.time()-last_seen
+                    elapsed=time.time()-state.last_seen
 
                 log("ESP Online")
 
-                event_esp_online(device_name)
+                event_esp_online(
+                    state.device_name
+                )
 
                 notify_esp_online(
 
-                    model,
-                    firmware,
-                    esp_ip
+                    state.model,
+                    state.firmware,
+                    state.esp_ip
 
                 )
+
+                print(
+                    f"[ESP] elapsed={elapsed:.1f}s "
+                    f"timeout={ESP_TIMEOUT} "
+                    f"offline={offline}"
+                )
+
 
 @app.route("/events")
 def events():
@@ -466,24 +486,15 @@ log(f"Services       : {SERVICES}")
 log(f"Listening on {HOST}:{PORT}")
 log("=" * 40)
 
-notify_startup(
-
-    model,
-    firmware,
-    esp_ip,
-    power_state
-
-)
-
-monitor_thread = threading.Thread(
-
+threading.Thread(
     target=esp_monitor,
-
     daemon=True
+).start()
 
-)
-
-monitor_thread.start()
+threading.Thread(
+    target=telegram_bot,
+    daemon=True
+).start()
 
 app.run(
     host=HOST,

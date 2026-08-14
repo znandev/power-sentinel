@@ -87,6 +87,12 @@ CHAT_ID = config.get(
     fallback=""
 )
 
+TELEGRAM_POLLING_INTERVAL = config.getint(
+    "telegram",
+    "polling_interval",
+    fallback=5
+)
+
 SERVER_HOSTNAME = socket.gethostname()
 
 def get_server_ip():

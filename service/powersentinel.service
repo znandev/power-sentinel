@@ -1,0 +1,26 @@
+[Unit]
+Description=PowerSentinel UPS Guardian
+After=network-online.target
+Wants=network-online.target
+
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=znandxyz
+Group=znandxyz
+
+WorkingDirectory=/to/your/dirpath
+ExecStart=/usr/bin/python3 /to/your/dirpath/main.py
+
+Restart=always
+RestartSec=5
+
+KillSignal=SIGINT
+TimeoutStopSec=10
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
