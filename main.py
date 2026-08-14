@@ -118,27 +118,24 @@ def execute_shutdown():
 
 def shutdown_timer():
 
-    global countdown
-    global countdown_running
-
     while True:
 
         time.sleep(1)
 
         with LOCK:
 
-            if not countdown_running:
+            if not state.countdown_running:
 
                 return
 
-            countdown -= 1
+            state.countdown -= 1
 
-            if countdown < 0:
-                countdown = 0
+            if state.countdown < 0:
+                state.countdown = 0
 
-            log(f"Countdown : {countdown}s")
+            log(f"Countdown : {state.countdown}s")
 
-            if countdown == 0:
+            if state.countdown == 0:
 
                 state.countdown_running = False
 
@@ -182,8 +179,6 @@ def home():
 @app.route("/pln")
 def pln():
 
-    global countdown
-    global countdown_running
     global shutdown_thread
 
     state.esp_ip = request.remote_addr
@@ -235,17 +230,19 @@ def pln():
                     state.device_name
                 )
 
+                state.countdown = COUNTDOWN
+
                 notify_power_lost(
 
                     state.model,
                     state.firmware,
                     state.esp_ip,
                     state.power_state,
-                    countdown
+                    state.countdown
 
                 )
 
-            if not countdown_running:
+            if not state.countdown_running:
 
                 state.countdown = COUNTDOWN
 
@@ -288,7 +285,7 @@ def pln():
                     state.power_state
                 )
 
-            if countdown_running:
+            if state.countdown_running:
 
                 log("Countdown cancelled")
 
