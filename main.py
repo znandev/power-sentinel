@@ -203,17 +203,17 @@ def pln():
     
     device = request.args.get(
         "device",
-        device_name
+        state.device_name
     )
 
     fw = request.args.get(
         "fw",
-        firmware
+        state.firmware
     )
 
     device_model = request.args.get(
         "model",
-        model
+        state.model
     )
 
     with LOCK:
