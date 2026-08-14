@@ -17,7 +17,6 @@ from event import (
     event_countdown_started,
     event_countdown_cancelled,
     event_shutdown,
-    event_heartbeat,
     event_esp_online,
     event_esp_offline
 )
@@ -141,7 +140,7 @@ def shutdown_timer():
 
             if countdown == 0:
 
-                countdown_running = False
+                state.countdown_running = False
 
                 event_shutdown(
                     state.device_name
@@ -183,15 +182,11 @@ def home():
 @app.route("/pln")
 def pln():
 
-    global power_state
     global countdown
     global countdown_running
     global shutdown_thread
-    global device_name
-    global firmware
-    global model
 
-    esp_ip = request.remote_addr
+    state.esp_ip = request.remote_addr
 
     pln_state = request.args.get(
         "state",
@@ -252,9 +247,9 @@ def pln():
 
             if not countdown_running:
 
-                countdown = COUNTDOWN
+                state.countdown = COUNTDOWN
 
-                countdown_running = True
+                state.countdown_running = True
 
                 log("Shutdown countdown started")
 
@@ -301,9 +296,9 @@ def pln():
                     state.device_name
                 )
 
-                countdown_running = False
+                state.countdown_running = False
 
-                countdown = 0
+                state.countdown = 0
 
     return "OK"
 
@@ -311,8 +306,6 @@ def pln():
 def heartbeat():
 
     global startup_sent
-
-    state.esp_seen_once = True
 
     with LOCK:
 
@@ -372,8 +365,8 @@ def status():
         return jsonify({
 
             "power": state.power_state,
-            "countdown": countdown,
-            "running": countdown_running,
+            "countdown": state.countdown,
+            "running": state.countdown_running,
             "esp_online": esp_online,
             "device": state.device_name,
             "firmware": state.firmware,
@@ -393,10 +386,6 @@ def esp_monitor():
             continue
 
         elapsed = time.time()-state.last_seen
-
-        print(
-            f"[ESP_MON] elapsed={elapsed:.1f}"
-        )
 
         if elapsed > ESP_TIMEOUT:
 
@@ -425,10 +414,8 @@ def esp_monitor():
             if offline:
 
                 offline=False
-
-                with LOCK:
-
-                    elapsed=time.time()-state.last_seen
+                
+                elapsed = time.time() - state.last_seen
 
                 log("ESP Online")
 
