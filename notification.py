@@ -88,30 +88,22 @@ def notify_startup(
     telegram(
 
 f"""
-🟢 <b>PowerSentinel Started</b>
+🟢 <b>POWERSENTINEL STARTED</b>
 
-━━━━━━━━━━━━━━━━━━
+══════════════════
 
-🖥 <b>Server</b>
-{SERVER_HOSTNAME}
+<pre>
+🖥 Server   : zn4ndserver
+🌐 IP       : 10.77.227.100
 
-🌐 <b>Server IP</b>
-{SERVER_IP}
+⚡ Power    : 🟢 ON
 
-📡 <b>ESP Model</b>
-{esp_model}
+📡 Model    : ESP8266-D1Mini
+🏷 Firmware : 0.2.0
+📶 ESP IP   : 10.42.74.5
+</pre>
 
-🔖 <b>Firmware</b>
-{esp_fw}
-
-📶 <b>ESP IP</b>
-{esp_ip}
-
-⚡ <b>Power</b>
-{power}
-
-🕒 <b>Time</b>
-{now()}
+🕒 <i>2026-08-14 00:31:03</i>
 """
     )
 
@@ -128,33 +120,24 @@ def notify_power_lost(
     telegram(
 
 f"""
-🚨 <b>POWER LOST</b>
+🚨 <b>POWER FAILURE DETECTED</b>
 
-━━━━━━━━━━━━━━━━━━
+══════════════════
 
-🖥 <b>Server</b>
-{SERVER_HOSTNAME}
+<pre>
+🖥 Server   : zn4ndserver
 
-🌐 <b>Server IP</b>
-{SERVER_IP}
+⚡ Power    : 🔴 OFF
+⏳ Timer    : 20s
 
-📡 <b>ESP Model</b>
-{esp_model}
+📡 Model    : ESP8266-D1Mini
+🏷 Firmware : 0.2.0
+📶 ESP IP   : 10.42.74.5
+</pre>
 
-🔖 <b>Firmware</b>
-{esp_fw}
+⚠️ <b>Shutdown countdown started</b>
 
-📶 <b>ESP IP</b>
-{esp_ip}
-
-⚡ <b>Power</b>
-{power}
-
-⏳ <b>Shutdown</b>
-{countdown} Seconds
-
-🕒 <b>Time</b>
-{now()}
+🕒 <i>2026-08-14 00:03:18</i>
 """
     )
 
@@ -172,31 +155,22 @@ def notify_power_restored(
 f"""
 ✅ <b>POWER RESTORED</b>
 
-━━━━━━━━━━━━━━━━━━
+══════════════════
 
-🖥 <b>Server</b>
-{SERVER_HOSTNAME}
+<pre>
+🖥 Server   : zn4ndserver
 
-🌐 <b>Server IP</b>
-{SERVER_IP}
+⚡ Power    : 🟢 ON
+🛑 Timer    : CANCELLED
 
-📡 <b>ESP Model</b>
-{esp_model}
+📡 Model    : ESP8266-D1Mini
+🏷 Firmware : 0.2.0
+📶 ESP IP   : 10.42.74.5
+</pre>
 
-🔖 <b>Firmware</b>
-{esp_fw}
+🔋 <b>Utility power recovered</b>
 
-📶 <b>ESP IP</b>
-{esp_ip}
-
-⚡ <b>Power</b>
-{power}
-
-🛑 <b>Countdown</b>
-Cancelled
-
-🕒 <b>Time</b>
-{now()}
+🕒 <i>2026-08-14 00:03:51</i>
 """
     )
 
@@ -213,25 +187,20 @@ def notify_shutdown(
 f"""
 🛑 <b>SYSTEM SHUTDOWN</b>
 
-━━━━━━━━━━━━━━━━━━
+══════════════════
 
-🖥 <b>Server</b>
-{SERVER_HOSTNAME}
+<pre>
+🖥 Server   : zn4ndserver
 
-🌐 <b>Server IP</b>
-{SERVER_IP}
+⚡ Power    : OFF
+📡 Model    : ESP8266-D1Mini
+🏷 Firmware : 0.2.0
+📶 ESP IP   : 10.42.74.5
+</pre>
 
-📡 <b>ESP Model</b>
-{esp_model}
+☠️ <b>Executing shutdown sequence</b>
 
-🔖 <b>Firmware</b>
-{esp_fw}
-
-📶 <b>ESP IP</b>
-{esp_ip}
-
-🕒 <b>Time</b>
-{now()}
+🕒 <i>2026-08-14 00:03:38</i>
 """
     )
 
@@ -246,29 +215,23 @@ def notify_esp_offline(
     telegram(
 
 f"""
-⚠ <b>ESP OFFLINE</b>
+🔴 <b>ESP OFFLINE</b>
 
-━━━━━━━━━━━━━━━━━━
+══════════════════
 
-🖥 <b>Server</b>
-{SERVER_HOSTNAME}
+<pre>
+🖥 Server   : zn4ndserver
 
-🌐 <b>Server IP</b>
-{SERVER_IP}
+📡 Model    : ESP8266-D1Mini
+🏷 Firmware : 0.2.0
+📶 ESP IP   : 10.42.74.5
 
-📡 <b>ESP Model</b>
-{esp_model}
+💔 Status   : NO HEARTBEAT
+</pre>
 
-🔖 <b>Firmware</b>
-{esp_fw}
+⚠️ <b>Device communication lost</b>
 
-📶 <b>ESP IP</b>
-{esp_ip}
-
-💔 <b>Heartbeat Timeout</b>
-
-🕒 <b>Time</b>
-{now()}
+🕒 <i>2026-08-14 00:05:22</i>
 """
     )
 
@@ -285,24 +248,20 @@ def notify_esp_online(
 f"""
 🟢 <b>ESP ONLINE</b>
 
-━━━━━━━━━━━━━━━━━━
+══════════════════
 
-🖥 <b>Server</b>
-{SERVER_HOSTNAME}
+<pre>
+🖥 Server   : zn4ndserver
 
-🌐 <b>Server IP</b>
-{SERVER_IP}
+📡 Model    : ESP8266-D1Mini
+🏷 Firmware : 0.2.0
+📶 ESP IP   : 10.42.74.5
 
-📡 <b>ESP Model</b>
-{esp_model}
+💚 Status   : CONNECTED
+</pre>
 
-🔖 <b>Firmware</b>
-{esp_fw}
+📶 <b>Heartbeat restored</b>
 
-📶 <b>ESP IP</b>
-{esp_ip}
-
-🕒 <b>Time</b>
-{now()}
+🕒 <i>2026-08-14 00:05:31</i>
 """
     )
