@@ -48,6 +48,26 @@ def telegram(message):
 
         print(f"[Telegram] Failed : {e}")
 
+def telegram_api(method, data=None):
+
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/{method}"
+
+    try:
+
+        r = requests.post(
+            url,
+            data=data,
+            timeout=15
+        )
+
+        return r.json()
+
+    except Exception as e:
+
+        print(f"[Telegram] {e}")
+
+        return {}
+
 def now():
 
     return datetime.now().strftime(

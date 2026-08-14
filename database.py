@@ -289,3 +289,23 @@ def get_statistics():
     conn.close()
 
     return stats
+
+def get_recent_events_text(limit=10):
+
+    events = get_recent_events(limit)
+
+    if not events:
+
+        return "No events"
+
+    lines = []
+
+    for e in events:
+
+        lines.append(
+
+            f"{e['timestamp']} | {e['event']}"
+
+        )
+
+    return "\n".join(lines)
