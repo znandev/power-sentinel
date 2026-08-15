@@ -136,12 +136,17 @@ def process_callback(action):
 f"""
 📜 <b>RECENT EVENTS</b>
 ──────────────────
-
 <pre>
 {get_recent_events_text()}
 </pre>
-"""
-        )
+
+🕒 <i>{time.strftime("%Y-%m-%d %H:%M:%S")}</i>
+<i>Developed by @nandzie</i>
+""",
+
+        keyboard=True
+
+    )
 
     elif action == "cancel":
 
@@ -216,8 +221,12 @@ f"""
 📦 <b>Total Events</b>: {stats['total_events']}
 
 🕒 <i>{time.strftime("%Y-%m-%d %H:%M:%S")}</i>
-"""
-        )
+<i>Developed by @nandzie</i>
+""",
+
+        keyboard=True
+
+    )
 
     elif text == "/events":
 
@@ -231,8 +240,11 @@ f"""
 </pre>
 
 🕒 <i>{time.strftime("%Y-%m-%d %H:%M:%S")}</i>
-"""
-        )
+<i>Developed by @nandzie</i>
+""",
+        keyboard=True
+        
+    )
 
     elif text == "/cancel":
 
@@ -253,6 +265,7 @@ f"""
 continues normally.
 
 🕒 <i>{time.strftime("%Y-%m-%d %H:%M:%S")}</i>
+<i>Developed by @nandzie</i>
 """
             )
 
