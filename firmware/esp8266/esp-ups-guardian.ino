@@ -3,13 +3,14 @@
 
 #define FW_VERSION  "0.2.0"
 #define DEVICE_NAME "Frigate-01"
+#define DEVICE_MODEL "ESP8266-D1Mini"
 
 #define PLN_PIN D5
 
-const char* WIFI_SSID = "xxxxxxxx";
-const char* WIFI_PASS = "xxxxxxxx";
+const char* WIFI_SSID = "xxxxxxxxx";
+const char* WIFI_PASS = "xxxxxxx";
 
-const char* SERVER_IP = "xx.xx.xx.xx";
+const char* SERVER_IP = "xx.xxx.xx.xx";
 const int SERVER_PORT = 8080;
 
 WiFiClient client;
@@ -84,8 +85,15 @@ void sendState(bool state) {
         String(SERVER_IP) +
         ":" +
         String(SERVER_PORT) +
-        "/pln?state=" +
-        String(state == LOW ? "ON" : "OFF");
+        "/pln"
+        "?state=" +
+        String(state == LOW ? "ON" : "OFF") +
+        "&device=" +
+        String(DEVICE_NAME) +
+        "&model=" +
+        String(DEVICE_MODEL) +
+        "&fw=" +
+        String(FW_VERSION);
 
     Serial.println();
     Serial.print("Sending State : ");
@@ -132,8 +140,22 @@ void sendHeartbeat(bool state) {
         String(state == LOW ? "ON" : "OFF") +
         "&device=" +
         String(DEVICE_NAME) +
+        "&model=" +
+        String(DEVICE_MODEL) +
         "&fw=" +
-        String(FW_VERSION);
+        String(FW_VERSION) +
+
+        "&rssi=" +
+        String(WiFi.RSSI()) +
+
+        "&ssid=" +
+        String(WIFI_SSID) +
+
+        "&heap=" +
+        String(ESP.getFreeHeap()) +
+
+        "&uptime=" +
+        String(millis() / 1000);
 
     http.setTimeout(3000);
 

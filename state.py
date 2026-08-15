@@ -11,3 +11,8 @@ esp_seen_once = False
 
 countdown = 0
 countdown_running = False
+
+rssi = 0
+ssid = "UNKNOWN"
+heap = 0
+uptime = 0

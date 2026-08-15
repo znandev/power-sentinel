@@ -1,16 +1,81 @@
+import json
 import requests
-from datetime import datetime
+import state
 
+from datetime import datetime
 from config import *
+
+# ======================================================
+# INLINE MENU
+# ======================================================
+
+def notification_menu():
+
+    return {
+
+        "inline_keyboard": [
+
+            [
+                {
+                    "text": "📊 Status",
+                    "callback_data": "status"
+                },
+                {
+                    "text": "📜 Events",
+                    "callback_data": "events"
+                }
+            ],
+
+            [
+                {
+                    "text": "🛑 Cancel",
+                    "callback_data": "cancel"
+                },
+                {
+                    "text": "🔄 Refresh",
+                    "callback_data": "refresh"
+                }
+            ]
+
+        ]
+    }
+
+# ======================================================
+# HELPERS
+# ======================================================
+
+def now():
+
+    return datetime.now().strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+
+def signal_bar(rssi):
+
+    if rssi >= -60:
+        return "▰▰▰▰▰"
+
+    elif rssi >= -70:
+        return "▰▰▰▰▱"
+
+    elif rssi >= -80:
+        return "▰▰▰▱▱"
+
+    elif rssi >= -90:
+        return "▰▰▱▱▱"
+
+    return "▰▱▱▱▱"
 
 # ======================================================
 # TELEGRAM
 # ======================================================
 
-import requests
-from requests.exceptions import RequestException
+def telegram(
 
-def telegram(message):
+    message,
+    keyboard=False
+
+):
 
     if not NOTIFICATION_ENABLED:
         return
@@ -20,19 +85,25 @@ def telegram(message):
 
     try:
 
+        payload = {
+
+            "chat_id": CHAT_ID,
+            "text": message,
+            "parse_mode": "HTML"
+
+        }
+
+        if keyboard:
+
+            payload["reply_markup"] = json.dumps(
+                notification_menu()
+            )
+
         response = requests.post(
 
             f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
 
-            data={
-
-                "chat_id": CHAT_ID,
-
-                "text": message,
-
-                "parse_mode": "HTML"
-
-            },
+            data=payload,
 
             timeout=10
 
@@ -44,37 +115,49 @@ def telegram(message):
 
     except Exception as e:
 
-        print(e)
+        print(
+            f"[Telegram] Failed : {e}"
+        )
 
-        print(f"[Telegram] Failed : {e}")
+# ======================================================
+# RAW API
+# ======================================================
 
-def telegram_api(method, data=None):
+def telegram_api(
 
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/{method}"
+    method,
+    data=None
+
+):
+
+    url = (
+        f"https://api.telegram.org/"
+        f"bot{BOT_TOKEN}/{method}"
+    )
 
     try:
 
         r = requests.post(
+
             url,
             data=data,
             timeout=15
+
         )
 
         return r.json()
 
     except Exception as e:
 
-        print(f"[Telegram] {e}")
+        print(
+            f"[Telegram] {e}"
+        )
 
         return {}
 
-def now():
-
-    return datetime.now().strftime(
-
-        "%Y-%m-%d %H:%M:%S"
-
-    )
+# ======================================================
+# NOTIFICATIONS
+# ======================================================
 
 def notify_startup(
 
@@ -89,23 +172,20 @@ def notify_startup(
 
 f"""
 🟢 <b>POWERSENTINEL STARTED</b>
+──────────────────
+🖥 <b>Server</b>: {SERVER_HOSTNAME}
+🌐 <b>IP</b>: {SERVER_IP}
+📡 <b>Device</b>: {state.device_name}
+🏷 <b>Firmware</b>: {esp_fw}
+📶 <b>WiFi</b>: {state.ssid}
+📡 <b>Signal</b>: {signal_bar(state.rssi)} ({state.rssi} dBm)
+⚡ <b>Utility</b>: {"🟢 ON" if power == "ON" else "🔴 OFF"}
 
-══════════════════
+🚀 <b>Monitoring service ready</b>
 
-<pre>
-🖥 Server   : zn4ndserver
-🌐 IP       : 10.77.227.100
-
-⚡ Power    : 🟢 ON
-
-📡 Model    : ESP8266-D1Mini
-🏷 Firmware : 0.2.0
-📶 ESP IP   : 10.42.74.5
-</pre>
-
-🕒 <i>2026-08-14 00:31:03</i>
-"""
-    )
+🕒 <i>{now()}</i>
+<i>Developed by @nandzie </i>
+""")
 
 def notify_power_lost(
 
@@ -118,27 +198,24 @@ def notify_power_lost(
 ):
 
     telegram(
-
 f"""
 🚨 <b>POWER FAILURE DETECTED</b>
+───────────────────
+🖥 <b>Server</b>: {SERVER_HOSTNAME}
+🌐 <b>IP</b>: {SERVER_IP}
+⚡ <b>Utility</b>: 🔴 OFF
+📡 <b>ESP Status</b>: 🟢 ONLINE
+📶 <b>ESP Signal</b>: {signal_bar(state.rssi)} ({state.rssi} dBm)
 
-══════════════════
+⏳ <b>Shutdown</b>: {countdown}s
 
-<pre>
-🖥 Server   : zn4ndserver
+⚠️ <b>Automatic shutdown countdown started</b>
 
-⚡ Power    : 🔴 OFF
-⏳ Timer    : 20s
+🕒 <i>{now()}</i>
+""",
 
-📡 Model    : ESP8266-D1Mini
-🏷 Firmware : 0.2.0
-📶 ESP IP   : 10.42.74.5
-</pre>
+        keyboard=True
 
-⚠️ <b>Shutdown countdown started</b>
-
-🕒 <i>2026-08-14 00:03:18</i>
-"""
     )
 
 def notify_power_restored(
@@ -158,19 +235,19 @@ f"""
 ══════════════════
 
 <pre>
-🖥 Server   : zn4ndserver
+🖥 Server   : {SERVER_HOSTNAME}
+🌐 IP       : {SERVER_IP}
 
-⚡ Power    : 🟢 ON
-🛑 Timer    : CANCELLED
+⚡ Utility  : 🟢 ON
+📡 ESP      : 🟢 ONLINE
 
-📡 Model    : ESP8266-D1Mini
-🏷 Firmware : 0.2.0
-📶 ESP IP   : 10.42.74.5
+📶 Signal   : {signal_bar(state.rssi)} ({state.rssi} dBm)
 </pre>
 
 🔋 <b>Utility power recovered</b>
+🛑 <b>Shutdown cancelled</b>
 
-🕒 <i>2026-08-14 00:03:51</i>
+🕒 <i>{now()}</i>
 """
     )
 
@@ -190,18 +267,21 @@ f"""
 ══════════════════
 
 <pre>
-🖥 Server   : zn4ndserver
+🖥 Server   : {SERVER_HOSTNAME}
 
-⚡ Power    : OFF
-📡 Model    : ESP8266-D1Mini
-🏷 Firmware : 0.2.0
-📶 ESP IP   : 10.42.74.5
+⚡ Utility  : 🔴 OFF
+📡 ESP      : 🟢 ONLINE
+
+📶 Signal   : {signal_bar(state.rssi)} ({state.rssi} dBm)
 </pre>
 
 ☠️ <b>Executing shutdown sequence</b>
 
-🕒 <i>2026-08-14 00:03:38</i>
-"""
+🕒 <i>{now()}</i>
+""",
+
+        keyboard=True
+
     )
 
 def notify_esp_offline(
@@ -220,19 +300,21 @@ f"""
 ══════════════════
 
 <pre>
-🖥 Server   : zn4ndserver
+🖥 Server   : {SERVER_HOSTNAME}
 
-📡 Model    : ESP8266-D1Mini
-🏷 Firmware : 0.2.0
-📶 ESP IP   : 10.42.74.5
-
-💔 Status   : NO HEARTBEAT
+📡 Device   : {state.device_name}
+📶 Last RSSI: {state.rssi} dBm
 </pre>
 
-⚠️ <b>Device communication lost</b>
+💔 <b>Heartbeat timeout detected</b>
 
-🕒 <i>2026-08-14 00:05:22</i>
-"""
+⚠️ Communication with ESP lost
+
+🕒 <i>{now()}</i>
+""",
+
+        keyboard=True
+
     )
 
 def notify_esp_online(
@@ -251,17 +333,16 @@ f"""
 ══════════════════
 
 <pre>
-🖥 Server   : zn4ndserver
+🖥 Server   : {SERVER_HOSTNAME}
 
-📡 Model    : ESP8266-D1Mini
-🏷 Firmware : 0.2.0
-📶 ESP IP   : 10.42.74.5
+📡 Device   : {state.device_name}
 
-💚 Status   : CONNECTED
+📶 Signal   : {signal_bar(state.rssi)} ({state.rssi} dBm)
+📡 WiFi     : {state.ssid}
 </pre>
 
-📶 <b>Heartbeat restored</b>
+💚 <b>Communication restored</b>
 
-🕒 <i>2026-08-14 00:05:31</i>
+🕒 <i>{now()}</i>
 """
     )
