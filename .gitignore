@@ -5,3 +5,4 @@ venv/
 events.db
 config.ini
 config.ini.bak
+git.key
