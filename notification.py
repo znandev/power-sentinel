@@ -185,7 +185,10 @@ f"""
 
 🕒 <i>{now()}</i>
 <i>Developed by @nandzie </i>
-""")
+""",
+
+        keyboard=True
+    )
 
 def notify_power_lost(
 
@@ -231,17 +234,12 @@ def notify_power_restored(
 
 f"""
 ✅ <b>POWER RESTORED</b>
-
-══════════════════
-
-<pre>
-🖥 Server   : {SERVER_HOSTNAME}
-🌐 IP       : {SERVER_IP}
-
-⚡ Utility  : 🟢 ON
-📡 ESP      : 🟢 ONLINE
-
-📶 Signal   : {signal_bar(state.rssi)} ({state.rssi} dBm)
+───────────────────
+🖥 <b>Server</b>: {SERVER_HOSTNAME}
+🌐 <b>IP</b>: {SERVER_IP}
+⚡ <b>Utility</b>: 🟢 ON
+📡 <b>ESP</b>: 🟢 ONLINE
+📶 <b>Signal</b>: {signal_bar(state.rssi)} ({state.rssi} dBm)
 </pre>
 
 🔋 <b>Utility power recovered</b>
@@ -263,17 +261,11 @@ def notify_shutdown(
 
 f"""
 🛑 <b>SYSTEM SHUTDOWN</b>
-
-══════════════════
-
-<pre>
-🖥 Server   : {SERVER_HOSTNAME}
-
-⚡ Utility  : 🔴 OFF
-📡 ESP      : 🟢 ONLINE
-
-📶 Signal   : {signal_bar(state.rssi)} ({state.rssi} dBm)
-</pre>
+───────────────────
+🖥 <b>Server</b>: {SERVER_HOSTNAME}
+⚡ <b>Utility</b>: 🔴 OFF
+📡 <b>ESP Status</b>: 🟢 ONLINE
+📶 <b>Signal</b>: {signal_bar(state.rssi)} ({state.rssi} dBm)
 
 ☠️ <b>Executing shutdown sequence</b>
 
@@ -296,15 +288,10 @@ def notify_esp_offline(
 
 f"""
 🔴 <b>ESP OFFLINE</b>
-
-══════════════════
-
-<pre>
-🖥 Server   : {SERVER_HOSTNAME}
-
-📡 Device   : {state.device_name}
-📶 Last RSSI: {state.rssi} dBm
-</pre>
+───────────────────
+🖥 <b>Server</b>: {SERVER_HOSTNAME}
+📡 <b>Device</b>: {state.device_name}
+📶 <b>Last RSSI</b>: {state.rssi} dBm
 
 💔 <b>Heartbeat timeout detected</b>
 
@@ -329,17 +316,11 @@ def notify_esp_online(
 
 f"""
 🟢 <b>ESP ONLINE</b>
-
-══════════════════
-
-<pre>
-🖥 Server   : {SERVER_HOSTNAME}
-
-📡 Device   : {state.device_name}
-
-📶 Signal   : {signal_bar(state.rssi)} ({state.rssi} dBm)
-📡 WiFi     : {state.ssid}
-</pre>
+───────────────────
+🖥 <b>Server</b>: {SERVER_HOSTNAME}
+📡 <b>Device</b>: {state.device_name}
+📶 <b>Signal</b>: {signal_bar(state.rssi)} ({state.rssi} dBm)
+📡 <b>WiFi</b>: {state.ssid}
 
 💚 <b>Communication restored</b>
 
