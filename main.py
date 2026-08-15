@@ -329,6 +329,32 @@ def heartbeat():
             state.model
         )
 
+        state.rssi = int(
+            request.args.get(
+                "rssi",
+                state.rssi
+            )
+        )
+
+        state.ssid = request.args.get(
+            "ssid",
+            state.ssid
+        )
+
+        state.heap = int(
+            request.args.get(
+                "heap",
+                state.heap
+            )
+        )
+
+        state.uptime = int(
+            request.args.get(
+                "uptime",
+                state.uptime
+            )
+        )
+
         state.esp_ip = request.remote_addr
 
         if not startup_sent:
